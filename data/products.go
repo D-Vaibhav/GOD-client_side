@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"regexp"
 	"time"
@@ -60,9 +61,9 @@ func (p *Product) Validate() error {
 }
 
 func validateLicenceNumber(fl validator.FieldLevel) bool {
-	supposedRegexp := regexp.MustComplie(`[a-z]+-[a-z]+-[a-z]+`)
+	supposedRegexp := regexp.MustCompile(`[a-z]-+[a-z]+-[a-z]+`)
 
-	passedString := supposedRegexp.FindAllStrings(fl.Field().String(), -1)
+	passedString := supposedRegexp.FindAllString(fl.Field().String(), -1)
 
 	if len(passedString) != 1 {
 		return false
@@ -82,6 +83,48 @@ func (p *Products) ToJSON(w io.Writer) error {
 	return encoder.Encode(p)
 }
 
+// --------------------------------------- GET logic -------------------------------------------
 func GetProducts() Products {
 	return productList
+}
+
+// --------------------------------------- POST logic -------------------------------------------
+func AddProduct(p *Product) {
+	// overwriting ID to the incoming product
+	p.ID = getNextID()
+
+	// will append incoming product to the productList with ID attached to it
+	productList = append(productList, p)
+}
+
+func getNextID() int {
+	lastProduct := productList[len(productList)-1]
+	return lastProduct.ID + 1
+}
+
+// --------------------------------------- PUT logic ---------------------------------------------
+func UpdateProduct(productID int, prod *Product) error {
+	// verifing for the product in our DB
+	index, err := findProduct(productID)
+
+	// product not found
+	if err != nil {
+		return err
+	}
+
+	// assigning passed productID to the passed product(empty), only after varifying that product exists
+	prod.ID = productID
+	productList[index] = prod
+	return nil
+}
+
+var ErrorProductNotFound = fmt.Errorf("Product not Found in our DB")
+
+func findProduct(productID int) (int, error) {
+	for index, product := range productList {
+		if product.ID == productID {
+			return index, nil
+		}
+	}
+	return -1, ErrorProductNotFound
 }
