@@ -12,7 +12,7 @@ import (
 
 // CREATING PRODUCT BLUE-PRINT
 type Product struct {
-	ID            int     `json:"id"`
+	ID            int     `json:"id"` // will be generated automatically
 	Name          string  `json:"name" validate:"required"`
 	Description   string  `json:"description"`
 	Price         float32 `json:"price" validate:"gt=0"`
@@ -75,12 +75,19 @@ func validateLicenceNumber(fl validator.FieldLevel) bool {
 type Products []*Product
 
 // FUNCTIONS FOR ABSTRACTION AND IMPROVING CODE QUALITY
+// encoder
 func (p *Products) ToJSON(w io.Writer) error {
 	// package encoding convert data to and from byte-level and textual representations
 	// encoding/json will convert to json
 	encoder := json.NewEncoder(w)
 
 	return encoder.Encode(p)
+}
+
+// decoder, just a single product
+func (p *Product) FromJSON(r io.Reader) error {
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(p)
 }
 
 // --------------------------------------- GET logic -------------------------------------------

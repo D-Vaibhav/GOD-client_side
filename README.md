@@ -8,4 +8,6 @@
     # HANDLES ARE HANDLING ENTITY
     - define handler struct and it's constructor
     - start implementation of GET, POST, PUT
+
+
  -->

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -73,4 +75,34 @@ func (p Products) UpdateProduct(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "Product not Found in our DB", http.StatusInternalServerError)
 		return
 	}
+}
+
+// MIDDLEWARE- we just want to see data not operate anything on it
+func (p Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// empty product type object
+		prod := data.Product{}
+
+		// making it ready to validate
+		err := prod.FromJSON(req.Body)
+		if err != nil {
+			p.l.Println("ERROR deserializing product", err)
+			http.Error(rw, "ERROR reading product", http.StatusBadRequest)
+			return
+		}
+
+		// validate the product
+		err = prod.Validate()
+		if err != nil {
+			p.l.Println("ERROR validating product", err)
+			http.Error(rw, fmt.Sprintf("ERROR validating product: %s", err), http.StatusBadRequest)
+		}
+
+		// hence product is filtered n is good to push to the req.Context
+		ctx := context.WithValue(req.Context(), keyProduct{}, prod)
+		req = req.WithContext(ctx)
+
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		next.ServeHTTP(rw, req)
+	})
 }
